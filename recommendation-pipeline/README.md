@@ -15,20 +15,20 @@ A modular, reproducible pipeline that goes from raw data to evaluated recommende
 ## 1. Setup
 
 ```bash
-git clone <your-repo-url> recommendation-pipeline && cd recommendation-pipeline
-python3 -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
+git clone https://github.com/2025ag05218/recommendation-pipeline.git 
+cd recommendation-pipeline
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 Python 3.11+ is required (tested on 3.12).
 
 ## 2. Run the whole pipeline
 
-Pick **one** of the three equivalent ways (they call the same stage code):
-
 ```bash
-python dags/recommendation_flow.py     # Prefect flow (recommended; this is the orchestrated run)
-python run_pipeline.py                 # plain Python runner, no orchestrator
-python run_pipeline.py --stage features   # a single stage, e.g. for debugging
+python dags/recommendation_flow.py     
+python run_pipeline.py                 
+python run_pipeline.py --stage features   
 ```
 A full run takes about 10 seconds. It is deterministic (`seed: 42`, fixed config), so re-running gives the same numbers.
 
@@ -50,8 +50,6 @@ python dags/recommendation_flow.py      # terminal 2
 ```
 Open the UI -> *Runs* -> latest `recommendation-pipeline` run and screenshot the task graph showing every task **Completed**.
 Save it as `reports/prefect_run_screenshot.png`. (`reports/workflow_run.png` is an auto-generated summary of the same run built from `reports/run_log.jsonl`.)
-
-**Airflow instead?** Copy `dags/airflow_dag.py` into your Airflow `dags/` folder, set `RECSYS_REPO` to the repo path and trigger `recommendation_pipeline`.
 
 ## 3. Repository layout
 
