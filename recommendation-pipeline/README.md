@@ -34,12 +34,12 @@ A full run takes about 10 seconds. It is deterministic (`seed: 42`, fixed config
 
 Then:
 ```bash
-pytest -q                                                   # 8 unit tests (metrics, validation, split)
+python -m pytest -q                                                   # 8 unit tests (metrics, validation, split)
 python -m src.inference.predict --user 42 --k 10 --model hybrid   # top-10 recommendations for a user
 mlflow ui --backend-store-uri sqlite:///mlflow.db           # compare runs at http://127.0.0.1:5000
 python scripts/make_architecture_diagram.py                 # regenerate docs/architecture.png
 python scripts/make_workflow_graphic.py                     # regenerate reports/workflow_run.png
-python scripts/make_report.py                               # regenerate reports/final_report.pdf from latest results
+python scripts/make_report.py --repo-url <your-github-url>   # regenerate reports/final_report.pdf (with the repo link)
 ```
 
 ### Orchestration screenshot (required deliverable)
