@@ -1,0 +1,80 @@
+# Central configuration for the recommendation pipeline.
+# Every stage reads this file, so a run is fully described by (code + config + seed).
+seed: 42
+
+paths:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  features_dir: data/features
+  errors_dir: data/errors
+  models_dir: models
+  reports_dir: reports
+
+dataset:
+  name: MovieLens 100K
+  local_dir: data/raw/ml-100k            # bundled copy -> pipeline runs offline
+  download_url: https://files.grouplens.org/datasets/movielens/ml-100k.zip
+
+ingestion:
+  # The real MovieLens data is almost perfectly clean. To demonstrate (and test) the
+  # validation stage we inject a small, seeded, documented set of faults into the RAW CSVs.
+  # Set to false to ingest the data untouched.
+  inject_faults: true
+  faults:
+    interactions:
+      duplicate_rows: 150
+      invalid_rating_value: 100      # 0, 6, 7, -1 ...
+      non_numeric_rating: 50         # "five", "N/A" ...
+      missing_rating: 60
+      missing_user_id: 30
+      invalid_timestamp: 80          # 0, far future, garbage text
+      orphan_user_id: 70             # user does not exist in users table
+      orphan_item_id: 70             # item does not exist in items table
+    users:
+      duplicate_rows: 10
+      invalid_age: 8
+      invalid_gender: 5
+      missing_occupation: 6
+    items:
+      duplicate_rows: 5
+      missing_title: 8
+      missing_genres: 5
+
+validation:
+  rating_min: 1
+  rating_max: 5
+  timestamp_min: "1995-01-01"
+  timestamp_max: "2025-12-31"
+  age_min: 5
+  age_max: 100
+  allowed_genders: ["M", "F"]
+  release_year_min: 1900
+  release_year_max: 2025
+  max_rejected_fraction: 0.20      # fail the pipeline if more than 20% of a table is rejected
+
+preparation:
+  min_user_interactions: 5
+  positive_threshold: 4            # rating >= 4 is treated as a "like" / relevant item
+  split:
+    strategy: per_user             # per_user (last x% of each user's history) | global (single time cut-off)
+    test_fraction: 0.2             # per_user: share of each user's most recent interactions
+    global_cutoff_quantile: 0.8    # global: timestamps above this quantile -> test
+
+features:
+  as_of: null                      # null -> max(train timestamp); fixed point-in-time for every feature
+  bayes_prior_strength: 10         # shrinkage m for smoothed item rating
+  time_decay_half_life_days: 30
+
+models:
+  top_k: 10
+  mlflow:
+    tracking_uri: sqlite:///mlflow.db
+    experiment_name: recsys-movielens-100k
+  popularity: {}
+  item_cf:
+    similarity_shrinkage: 10       # lambda in co / (co + lambda)
+    rating_neighbors: 30           # k neighbours for rating prediction
+  content_based: {}
+  hybrid:
+    cf_weight: 0.7
+    content_weight: 0.3

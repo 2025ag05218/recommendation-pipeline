@@ -1,0 +1,19 @@
+{
+  "users": 943,
+  "items": 1682,
+  "interactions": 99540,
+  "duplicate_user_item_pairs_removed": 0,
+  "interactions_dropped_sparse_users": 0,
+  "split_strategy": "per_user",
+  "train_rows": 79996,
+  "test_rows": 19544,
+  "train_time_range": [
+    "1997-09-20 03:05:10+00:00",
+    "1998-04-22 23:10:38+00:00"
+  ],
+  "test_time_range": [
+    "1997-09-20 20:18:15+00:00",
+    "1998-04-22 23:10:38+00:00"
+  ],
+  "sparsity_pct": 93.72
+}

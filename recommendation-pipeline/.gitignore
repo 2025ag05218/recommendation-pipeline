@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+mlflow.db
+mlartifacts/
+mlruns/
+models/*.joblib
+data/raw/csv/
+data/processed/*.parquet
+data/processed/*.npz
+data/processed/validated/
+data/features/*.parquet
+data/errors/*.parquet
+.prefect/

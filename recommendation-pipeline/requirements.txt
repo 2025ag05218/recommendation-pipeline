@@ -1,0 +1,14 @@
+# Tested with Python 3.12 (3.11+ required by pandas 3)
+pandas==3.0.6
+numpy==2.5.4
+scipy==1.18.1
+pyarrow==26.0.1
+PyYAML==6.0.3
+joblib==1.6.0
+mlflow==3.18.0
+prefect==3.9.2
+matplotlib==3.11.2
+reportlab==5.0.1
+pytest==9.2.0
+# Optional (only if you run dags/airflow_dag.py inside an Airflow installation):
+# apache-airflow>=2.9

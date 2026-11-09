@@ -1,0 +1,31 @@
+{
+  "dataset": "MovieLens 100K",
+  "rows": {
+    "users": 953,
+    "items": 1687,
+    "interactions": 100150
+  },
+  "fault_injection": {
+    "interactions": {
+      "invalid_rating_value": 100,
+      "non_numeric_rating": 50,
+      "missing_rating": 60,
+      "missing_user_id": 30,
+      "invalid_timestamp": 80,
+      "orphan_user_id": 70,
+      "orphan_item_id": 70,
+      "duplicate_rows": 150
+    },
+    "users": {
+      "invalid_age": 8,
+      "invalid_gender": 5,
+      "missing_occupation": 6,
+      "duplicate_rows": 10
+    },
+    "items": {
+      "missing_title": 8,
+      "missing_genres": 5,
+      "duplicate_rows": 5
+    }
+  }
+}

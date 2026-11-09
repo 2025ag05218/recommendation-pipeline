@@ -1,0 +1,62 @@
+{
+  "tables": {
+    "users": {
+      "rows_in": 953,
+      "rows_valid": 943,
+      "rows_rejected": 10,
+      "rejected_pct": 1.0493179433368311
+    },
+    "items": {
+      "rows_in": 1687,
+      "rows_valid": 1682,
+      "rows_rejected": 5,
+      "rejected_pct": 0.2963841138114997
+    },
+    "interactions": {
+      "rows_in": 100150,
+      "rows_valid": 99540,
+      "rows_rejected": 610,
+      "rejected_pct": 0.6090863704443334
+    }
+  },
+  "reject_counts": {
+    "users": {
+      "missing_value:user_id": 0,
+      "wrong_dtype:user_id": 0,
+      "duplicate_key:user_id": 10
+    },
+    "items": {
+      "missing_value:item_id": 0,
+      "wrong_dtype:item_id": 0,
+      "duplicate_key:item_id": 5
+    },
+    "interactions": {
+      "missing_value:user_id": 30,
+      "wrong_dtype:user_id": 0,
+      "missing_value:item_id": 0,
+      "wrong_dtype:item_id": 0,
+      "missing_value:rating": 60,
+      "wrong_dtype:rating": 50,
+      "invalid_rating": 100,
+      "missing_value:timestamp": 0,
+      "wrong_dtype:timestamp": 16,
+      "invalid_timestamp": 64,
+      "duplicate_row": 150,
+      "orphan_user_id": 70,
+      "orphan_item_id": 70
+    }
+  },
+  "warn_counts": {
+    "users": {
+      "invalid_or_missing_age": 8,
+      "invalid_or_missing_gender": 5,
+      "missing_occupation": 6
+    },
+    "items": {
+      "missing_title": 8,
+      "missing_genres": 5,
+      "invalid_or_missing_release_date": 1
+    },
+    "interactions": {}
+  }
+}

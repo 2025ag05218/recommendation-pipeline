@@ -1,0 +1,10 @@
+{"stage": "ingestion", "status": "success", "started_utc": "2026-11-07T21:43:51+00:00", "seconds": 0.32}
+{"stage": "validation", "status": "success", "started_utc": "2026-11-07T21:43:52+00:00", "seconds": 0.37}
+{"stage": "preparation", "status": "success", "started_utc": "2026-11-07T21:43:52+00:00", "seconds": 0.13}
+{"stage": "transformation", "status": "success", "started_utc": "2026-11-07T21:43:52+00:00", "seconds": 0.2}
+{"stage": "features", "status": "success", "started_utc": "2026-11-07T21:43:52+00:00", "seconds": 0.24}
+{"stage": "training[popularity]", "status": "success", "started_utc": "2026-11-07T21:43:53+00:00", "seconds": 2.0}
+{"stage": "training[content_based]", "status": "success", "started_utc": "2026-11-07T21:43:53+00:00", "seconds": 2.01}
+{"stage": "training[item_cf]", "status": "success", "started_utc": "2026-11-07T21:43:53+00:00", "seconds": 2.23}
+{"stage": "training[hybrid]", "status": "success", "started_utc": "2026-11-07T21:43:53+00:00", "seconds": 2.28}
+{"stage": "evaluation", "status": "success", "started_utc": "2026-11-07T21:43:55+00:00", "seconds": 1.02}

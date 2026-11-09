@@ -1,0 +1,9 @@
+{
+  "matrix_shape": [
+    943,
+    1682
+  ],
+  "nnz": 79996,
+  "density_pct": 5.043,
+  "items_without_train_interactions": 71
+}
