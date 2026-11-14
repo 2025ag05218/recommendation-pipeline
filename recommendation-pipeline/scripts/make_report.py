@@ -3,6 +3,7 @@
 All numbers are read from reports/*.json, so re-run this after any pipeline run.
 The narrative sentences describe the default configuration - re-read them if you change data/config.
 """
+import argparse
 import json
 from pathlib import Path
 
@@ -11,14 +12,20 @@ from reportlab.lib.enums import TA_JUSTIFY
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
-from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import Image, KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 ROOT = Path(__file__).resolve().parents[1]
+_ap = argparse.ArgumentParser()
+_ap.add_argument("--repo-url", default=None, help="GitHub repository URL to print in the report")
+_ap.add_argument("--with-evidence", action="store_true", help="append Appendix A with stage / Prefect / MLflow screenshots")
+_args = _ap.parse_args()
+REPO_URL, WITH_EVIDENCE = _args.repo_url, _args.with_evidence
 R = ROOT / "reports"
 rd = lambda n: json.loads((R / n).read_text())
 res = {r["model"]: r for r in rd("results.json")}
 val, prep, trans = rd("validation_report.json"), rd("preparation_summary.json"), rd("transformation_summary.json")
 ing, feat = rd("ingestion_summary.json"), rd("features_summary.json")
+n_faults = sum(sum(v.values()) for v in ing["fault_injection"].values())
 pop, cf, ct, hy = res["popularity"], res["item_cf"], res["content_based"], res["hybrid"]
 lift = lambda a, b: 100 * (a / b - 1)
 
@@ -49,13 +56,17 @@ fm = lambda v: "n/a" if v is None else f"{v:.4f}"
 story = [
     P("End-to-End Data Management Pipeline for a Recommendation System", title),
     P("Data Management for Machine Learning (AIMLZG529) - Assignment 2 &nbsp;|&nbsp; Rajavarman Mani &nbsp;|&nbsp; Roll No. 2025ag05218", sub),
+    *([P(f"GitHub repository: <link href='{REPO_URL}' color='#1F5FBF'>{REPO_URL}</link>", sub)] if REPO_URL else []),
 
     P("1. Objective and dataset", h1),
     P(f"The goal is a clean, modular and reproducible pipeline that takes raw user, item and interaction data to evaluated "
       f"recommenders: ingestion, validation, preparation, transformation, feature management, training, evaluation and orchestration. "
       f"I used <b>MovieLens 100K</b> ({prep['users']} users, {prep['items']:,} movies, {prep['interactions']:,} ratings after cleaning; "
       f"{prep['sparsity_pct']}% sparse). The task is top-10 movie recommendation; a rating of 4 or more counts as a positive signal. "
-      f"The full source code, configuration and instructions are in the GitHub repository (see README)."),
+      f"The full source code, configuration and instructions are in the GitHub repository"
+      + (f" (<link href='{REPO_URL}' color='#1F5FBF'>{REPO_URL}</link>; see its README)." if REPO_URL else " (see README)")
+      + ". Execution evidence (screenshots of every stage, Prefect and MLflow) is in <font face='Courier'>reports/evidence.md</font>"
+      + (" and in Appendix A." if WITH_EVIDENCE else ".")),
 
     P("2. Architecture and tools", h1),
     Image(str(ROOT / "docs" / "architecture.png"), width=17.2 * cm, height=17.2 * cm * 0.55),
@@ -95,6 +106,14 @@ for t in ("interactions", "users", "items"):
     top = sorted(val["reject_counts"][t].items(), key=lambda kv: -kv[1])
     top = ", ".join(f"{k} ({v})" for k, v in top if v > 0)
     vt.append([t, f"{s['rows_in']:,}", f"{s['rows_valid']:,}", f"{s['rows_rejected']:,} ({s['rejected_pct']:.2f}%)", top])
+shot = R / "prefect_run_screenshot.png"          # optional: real Prefect UI screenshot of a successful run
+if shot.exists():
+    from PIL import Image as _PIL
+    _w, _h = _PIL.open(shot).size
+    story += [Spacer(1, 3), Image(str(shot), width=12.5 * cm, height=12.5 * cm * _h / _w),
+              P("<i>Figure: Prefect UI - successful run of the recommendation-pipeline flow (10 task runs completed; the four training tasks run in parallel).</i>",
+                ParagraphStyle("cap", parent=body, fontSize=8, alignment=1, textColor=colors.HexColor("#444444")))]
+
 story += [P("4. Data validation outcome", h1),
           table(vt, [2.0 * cm, 1.6 * cm, 1.6 * cm, 2.4 * cm, 9.6 * cm]),
           Spacer(1, 3),
@@ -135,8 +154,54 @@ for b in [
     story.append(P(b, bul))
     story[-1].bulletText = "\u2022"
 
-doc = SimpleDocTemplate(str(R / "final_report.pdf"), pagesize=A4, leftMargin=1.8 * cm, rightMargin=1.8 * cm,
+def fit_image(path, max_w, max_h):
+    from PIL import Image as _P
+    w, h = _P.open(path).size
+    scale = min(max_w / w, max_h / h)
+    return Image(str(path), width=w * scale, height=h * scale)
+
+
+if WITH_EVIDENCE:
+    SH = R / "screenshots"
+    capt = ParagraphStyle("capt", parent=body, fontSize=8.3, leading=10.3, alignment=0, textColor=colors.HexColor("#333333"), spaceAfter=7)
+    sec = ParagraphStyle("sec", parent=h1, fontSize=10.5, spaceBefore=4, keepWithNext=1)
+    story += [PageBreak(), P("Appendix A - Evidence of execution", title),
+              P("Supplementary to the 3-page report above. Stage images show the real log lines and output files of the run; "
+                "the Prefect and MLflow images are screenshots of their web UIs after a clean end-to-end run. "
+                "The same material, with more detail, is in <font face='Courier'>reports/evidence.md</font>.", ParagraphStyle("n", parent=body, alignment=1))]
+
+    def block(title_, caption, path, max_h=11.2):
+        return KeepTogether([P(title_, sec), fit_image(path, 17.0 * cm, max_h * cm), Spacer(1, 2), P(caption, capt)])
+
+    story.append(P("A.1 Repository structure", h1))
+    story.append(KeepTogether([fit_image(SH / "repo_structure.png", 14.0 * cm, 12.5 * cm),
+                               P("The suggested project structure (data/, src/ per stage, dags/, configs/, models/, reports/) plus a few additions "
+                                 "(tests, scripts, docs, inference).", capt)]))
+    story.append(PageBreak())
+    story.append(P("A.2 Pipeline stages", h1))
+    for t_, c_, f_ in [
+        ("Stage 1 - Ingestion", f"Raw users, items and interactions written as text CSVs; {n_faults} faults injected (seeded) for the validator to find.", "stage_1_ingestion.png"),
+        ("Stage 2 - Validation", "Rejected rows are separated with a reason; every injected fault is detected (injected vs detected table).", "stage_2_validation.png"),
+        ("Stage 3 - Preparation", "Cleaned data and the per-user time-based train/test split.", "stage_3_preparation.png"),
+        ("Stage 4 - Transformation", "User activity summary, item popularity and the sparse interaction matrix (training data only).", "stage_4_transformation.png"),
+        ("Stage 5 - Feature management", "User, item and interaction feature tables from the feature store.", "stage_5_features.png"),
+        ("Stage 6 - Training", "Four models trained as parallel tasks; MLflow run ids saved per model.", "stage_6_training.png"),
+        ("Stage 7 - Evaluation", "Precision, Recall, NDCG, Coverage, Diversity, RMSE and MAE per model.", "stage_7_evaluation.png"),
+        ("Unit tests", "Eight tests covering metrics, validation, the split and point-in-time features.", "stage_8_unit_tests.png"),
+    ]:
+        story.append(block(t_, c_, SH / f_))
+    story.append(P("A.3 Orchestration (Prefect)", h1))
+    story.append(block("Successful flow run", "The recommendation-pipeline flow completed with all 10 task runs; the four training tasks run in parallel.", R / "prefect_run_screenshot.png", 9.5))
+    story.append(block("Flow runs and task graph (clean end-to-end run)", "Dependencies: ingest, validate, prepare, transform and features in sequence, then training in parallel, then evaluation.", SH / "prefect_03_flow_run_taskruns.png", 9.5))
+    story.append(P("A.4 Experiment tracking (MLflow)", h1))
+    story.append(block("Experiment runs", "One MLflow run per model in experiment recsys-movielens-100k.", SH / "mlflow_02_runs_table.png", 6.5))
+    story.append(block("Run comparison", "Parameters and metrics of the four runs side by side.", SH / "mlflow_03_compare_runs.png", 17.5))
+    story.append(block("Run detail", "Metrics and parameters of the Item-CF run.", SH / "mlflow_04_run_detail_item_cf.png", 11))
+    story.append(block("Stored model artifact", "The trained model is stored as an MLflow artifact of its run.", SH / "mlflow_05_run_artifacts_item_cf.png", 8))
+
+OUT_PDF = R / ("final_report_with_evidence.pdf" if WITH_EVIDENCE else "final_report.pdf")
+doc = SimpleDocTemplate(str(OUT_PDF), pagesize=A4, leftMargin=1.8 * cm, rightMargin=1.8 * cm,
                         topMargin=1.5 * cm, bottomMargin=1.4 * cm, title="Recommendation Pipeline - Final Report",
                         author="Rajavarman Mani")
 doc.build(story)
-print("saved reports/final_report.pdf")
+print("saved", OUT_PDF)

@@ -33,8 +33,14 @@ def get_logger(name: str) -> logging.Logger:
     logger = logging.getLogger(name)
     if not logger.handlers:
         handler = logging.StreamHandler()
-        handler.setFormatter(logging.Formatter("%(asctime)s | %(levelname)-7s | %(name)s | %(message)s", "%H:%M:%S"))
+        fmt = logging.Formatter("%(asctime)s | %(levelname)-7s | %(name)s | %(message)s", "%H:%M:%S")
+        handler.setFormatter(fmt)
         logger.addHandler(handler)
+        # also persist every stage log to reports/pipeline.log (evidence of what each stage did)
+        (ROOT / "reports").mkdir(exist_ok=True)
+        file_handler = logging.FileHandler(ROOT / "reports" / "pipeline.log", encoding="utf-8", delay=True)
+        file_handler.setFormatter(fmt)
+        logger.addHandler(file_handler)
         logger.setLevel(logging.INFO)
         logger.propagate = False
     return logger
@@ -62,9 +68,10 @@ def logged_stage(stage_name: str):
         @functools.wraps(fn)
         def wrapper(cfg: dict, *args, **kwargs):
             log = get_logger(stage_name)
+            label = f"{stage_name}[{args[0]}]" if args and isinstance(args[0], str) else stage_name
             started = time.time()
             start_iso = datetime.now(timezone.utc).isoformat(timespec="seconds")
-            log.info("START %s", stage_name)
+            log.info("START %s", label)
             status, result = "success", None
             try:
                 result = fn(cfg, *args, **kwargs)
@@ -74,11 +81,8 @@ def logged_stage(stage_name: str):
                 raise
             finally:
                 seconds = round(time.time() - started, 2)
-                log.info("%s %s in %.2fs", "DONE" if status == "success" else "FAILED", stage_name, seconds)
+                log.info("%s %s in %.2fs", "DONE" if status == "success" else "FAILED", label, seconds)
                 log_path = get_path(cfg, "reports_dir", "run_log.jsonl")
-                label = stage_name
-                if args and isinstance(args[0], str):
-                    label = f"{stage_name}[{args[0]}]"
                 with open(log_path, "a", encoding="utf-8") as fh:
                     fh.write(json.dumps({"stage": label, "status": status, "started_utc": start_iso, "seconds": seconds}) + "\n")
 
@@ -91,3 +95,6 @@ def reset_run_log(cfg: dict) -> None:
     log_path = get_path(cfg, "reports_dir", "run_log.jsonl")
     if log_path.exists():
         log_path.unlink()
+    pipeline_log = get_path(cfg, "reports_dir", "pipeline.log")
+    if pipeline_log.exists():
+        open(pipeline_log, "w").close()          # truncate (handlers keep their file open)
